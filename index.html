@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Claim Master Pro v7</title>
+    <title>Claim Master v8.1</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -11,11 +11,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#121212">
 
-    <!-- 引入 Excel 處理庫 (SheetJS) -->
+    <!-- Excel Library -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.mini.min.js"></script>
 
     <style>
-        /* CSS 樣式 (保持型格風格) */
         :root {
             --bg: #121212; --card-bg: #1e1e1e; --text-main: #ffffff; --text-sub: #888888;
             --accent: #00ff9d; --accent-dim: rgba(0, 255, 157, 0.1);
@@ -39,6 +38,7 @@
         .toolbar { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .lang-select { background: var(--btn-bg); color: var(--text-main); border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; }
         .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 5px; }
+        
         .dashboard { width: 100%; max-width: 500px; background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid var(--border); box-sizing: border-box; }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .month-picker { background: var(--bg); color: var(--text-main); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; font-size: 14px; outline: none; }
@@ -54,17 +54,26 @@
         .amount.pending { color: var(--pending); }
         .amount.claimed { color: var(--accent); }
         .pending-note { font-size: 10px; color: var(--text-sub); display: block; margin-top: 4px; }
-        
         .total-in-row { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; }
         .total-in-label { font-size: 14px; color: var(--text-sub); }
         .total-in-amount { font-size: 24px; color: var(--text-main); font-weight: bold; }
 
-        /* Buttons & List */
+        /* Tools & Search */
         .tool-row { width:100%; max-width:500px; display:flex; gap:10px; margin-bottom:15px; }
         .btn-tool { flex: 1; padding: 12px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); border-radius: 10px; font-size: 13px; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: bold; }
         .btn-tool:active { background: var(--bg); }
+        
+        /* 🔥 Feature: Search Bar */
+        .search-bar { 
+            width: 100%; max-width: 500px; padding: 12px; background: var(--card-bg); 
+            border: 1px solid var(--border); color: var(--text-main); border-radius: 12px; 
+            margin-bottom: 15px; font-size: 14px; box-sizing: border-box; outline: none;
+        }
+        .search-bar:focus { border-color: var(--accent); }
+
         .btn-bulk { width: 100%; max-width: 500px; padding: 12px; background: var(--btn-bg); color: var(--text-main); border: 1px dashed var(--accent); border-radius: 12px; font-weight: bold; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
         
+        /* List */
         .list-container { width: 100%; max-width: 500px; }
         .expense-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--pending); box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
         .expense-card.claimed { border-left-color: var(--accent); opacity: 0.6; }
@@ -76,13 +85,9 @@
         .status-badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; background: var(--pending); color: #000; font-weight: bold; display: inline-block; margin-top: 5px; }
         .claimed .status-badge { background: var(--accent); }
         .delete-btn { background: none; border: none; color: var(--text-sub); padding: 10px; margin-left: 5px; font-size: 18px; z-index: 10; }
-        
-        /* Icons */
         .icon-tag { font-size: 12px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); color: var(--text-sub); margin-left: 5px; }
         .icon-tag.has-receipt { color: var(--accent); background: var(--accent-dim); }
-        .receipt-link { color: var(--salary-color); text-decoration: underline; margin-left: 5px; font-size: 12px; }
 
-        /* FAB */
         .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: var(--accent); color: #000; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 5px 20px rgba(0,255,157,0.4); border: none; cursor: pointer; z-index: 100; }
 
         /* Modals */
@@ -97,6 +102,14 @@
         .btn-cancel { background: var(--bg); color: var(--text-sub); border: 1px solid var(--border); }
         .btn-confirm { background: var(--accent); color: #000; }
         
+        /* 🔥 Feature: Smart Categories */
+        .cat-row { display: flex; gap: 8px; margin-bottom: 10px; justify-content: space-between; }
+        .cat-btn { 
+            flex: 1; padding: 10px 5px; background: var(--bg); border: 1px solid var(--border); 
+            border-radius: 8px; cursor: pointer; font-size: 18px; text-align: center; transition: 0.2s;
+        }
+        .cat-btn:active { background: var(--accent-dim); border-color: var(--accent); transform: scale(0.95); }
+
         .checkbox-group { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .checkbox-item { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
         input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
@@ -150,16 +163,11 @@
     </div>
 </div>
 
-<!-- 專業功能區 -->
 <div class="tool-row">
-    <button class="btn-tool" onclick="exportXLSX()">
-        📤 匯出 Excel (XLSX)
-    </button>
-    <button class="btn-tool" onclick="backupData()">
-        💾 備份資料
-    </button>
+    <button class="btn-tool" onclick="exportXLSX()">📤 Excel</button>
+    <button class="btn-tool" onclick="backupData()">💾 Backup</button>
     <label class="btn-tool" style="cursor:pointer; display:block;">
-        📥 還原
+        📥 Restore
         <input type="file" id="restore-file" style="display:none" onchange="restoreData(this)">
     </label>
 </div>
@@ -167,6 +175,9 @@
 <button class="btn-bulk" onclick="openBulkModal()">
     💰 <span data-i18n="btn_auto_claim">智能銷賬 (收到 Lump Sum)</span>
 </button>
+
+<!-- 🔥 Feature: Search Bar -->
+<input type="search" id="search-input" class="search-bar" placeholder="🔍 搜尋項目..." oninput="renderList()" data-i18n="ph_search">
 
 <div class="list-container" id="list-container"></div>
 <button class="fab" onclick="openModal()">+</button>
@@ -178,8 +189,20 @@
         <input type="hidden" id="edit-id">
         <label class="label" data-i18n="inp_date">日期</label>
         <input type="date" id="inp-date">
+        
         <label class="label" data-i18n="inp_item">項目</label>
-        <input type="text" id="inp-item">
+        
+        <!-- 🔥 Feature: Smart Category Icons -->
+        <div class="cat-row">
+            <div class="cat-btn" onclick="setCategory('🚕 Taxi')">🚕</div>
+            <div class="cat-btn" onclick="setCategory('🍽️ Food')">🍽️</div>
+            <div class="cat-btn" onclick="setCategory('🏨 Hotel')">🏨</div>
+            <div class="cat-btn" onclick="setCategory('🛒 Misc')">🛒</div>
+            <div class="cat-btn" onclick="setCategory('📎 Office')">📎</div>
+        </div>
+
+        <input type="text" id="inp-item" placeholder="Item Name">
+        
         <label class="label" data-i18n="inp_amount">金額 ($)</label>
         <input type="number" id="inp-amount" placeholder="0.00" step="0.1">
         
@@ -191,11 +214,10 @@
         <img id="preview-img" alt="Receipt Preview">
         <input type="hidden" id="photo-base64">
 
-        <!-- Checkboxes -->
         <div class="checkbox-group">
             <div class="checkbox-item">
                 <input type="checkbox" id="inp-has-receipt">
-                <label for="inp-has-receipt" data-i18n="lbl_has_receipt">🧾 有收據 (Receipt Exists)</label>
+                <label for="inp-has-receipt" data-i18n="lbl_has_receipt">🧾 有收據 (Rec. Exists)</label>
             </div>
             <div class="checkbox-item">
                 <input type="checkbox" id="inp-claimed">
@@ -268,14 +290,15 @@
             title_salary: "出糧紀錄", btn_add: "加入", btn_close: "關閉",
             btn_auto_claim: "智能銷賬 (收到 Lump Sum)", modal_add_title: "新增紀錄", modal_edit_title: "編輯紀錄",
             inp_date: "日期", inp_item: "項目", inp_amount: "金額 ($)", 
-            inp_claimed_chk: "💰 已收到錢 (Received)", lbl_has_receipt: "🧾 有收據 (Has Receipt)",
+            inp_claimed_chk: "💰 已收到錢 (Received)", lbl_has_receipt: "🧾 有收據 (Rec. Exists)",
             btn_cancel: "取消", btn_confirm: "儲存", btn_process: "處理",
             modal_bulk_title: "智能拆單", bulk_desc: "系統會按日期銷賬。如有餘額，可選擇轉為「出糧」。", bulk_amt: "收到金額 ($)",
             empty_list: "本月暫無紀錄 🍃", status_claimed: "已 CLAIM", status_pending: "PENDING",
             confirm_del: "確定刪除？", fill_all: "請填寫所有欄位！",
             bulk_result: (count, split, extra) => `處理了 ${count} 個項目！${split ? '\n⚠️ 有拆單' : ''}${extra ? '\n💰 餘額已加入出糧紀錄' : ''}`,
             lbl_receipt: "收據照片", btn_take_photo: "拍攝 / 上載", view_receipt: "收據預覽",
-            split_suffix: " (已付)", confirm_extra_salary: (amt) => `已銷賬所有 Pending！\n剩餘 $${amt}。\n\n要將這 $${amt} 記錄為「今日出糧」嗎？`
+            split_suffix: " (已付)", confirm_extra_salary: (amt) => `已銷賬所有 Pending！\n剩餘 $${amt}。\n\n要將這 $${amt} 記錄為「今日出糧」嗎？`,
+            ph_search: "🔍 搜尋項目..."
         },
         en: {
             lbl_salary: "Salary (Edit)", lbl_claimed: "Claimed (Month)", lbl_pending: "Outstanding", lbl_all_time: "*All time", lbl_total_in: "Total In",
@@ -289,7 +312,8 @@
             confirm_del: "Delete?", fill_all: "Fill all fields!",
             bulk_result: (count, split, extra) => `Processed ${count} items!${split ? '\n⚠️ Split item' : ''}${extra ? '\n💰 Surplus added to Salary' : ''}`,
             lbl_receipt: "Photo", btn_take_photo: "Take Photo", view_receipt: "View Receipt",
-            split_suffix: " (Paid)", confirm_extra_salary: (amt) => `All pending cleared!\nRemaining $${amt}.\n\nRecord $${amt} as Salary?`
+            split_suffix: " (Paid)", confirm_extra_salary: (amt) => `All pending cleared!\nRemaining $${amt}.\n\nRecord $${amt} as Salary?`,
+            ph_search: "🔍 Search Item..."
         }
     };
 
@@ -303,7 +327,11 @@
 
     // --- Core UI Functions ---
     function changeLang(lang) { currentLang = lang; localStorage.setItem(KEY_LANG, lang); updateUIText(); renderList(); }
-    function updateUIText() { const t = i18n[currentLang]; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.innerText = t[key]; }); }
+    function updateUIText() { 
+        const t = i18n[currentLang]; 
+        document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.innerText = t[key]; });
+        document.getElementById('search-input').placeholder = t.ph_search;
+    }
     function toggleTheme() { const html = document.documentElement; html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
     function onMonthChange() { renderList(); }
 
@@ -311,10 +339,11 @@
     function saveExpenses() { try { localStorage.setItem(KEY_EXP, JSON.stringify(expenses)); renderList(); } catch (e) { alert("Storage Full! Delete old photos."); } }
     function saveSalaries() { localStorage.setItem(KEY_SAL, JSON.stringify(salaries)); renderList(); }
 
-    // --- Render Logic ---
+    // --- Render Logic (With Filter) ---
     function renderList() {
         const t = i18n[currentLang];
         const monthVal = document.getElementById('month-picker').value;
+        const searchVal = document.getElementById('search-input').value.toLowerCase(); // Get Search text
         const container = document.getElementById('list-container');
         container.innerHTML = '';
 
@@ -323,8 +352,13 @@
         const totalSalary = monthSalaries.reduce((sum, s) => sum + parseFloat(s.amount), 0);
         document.getElementById('display-salary').innerText = `$${totalSalary.toLocaleString()}`;
 
-        // Expense List
-        const currentItems = expenses.filter(item => item.date.startsWith(monthVal));
+        // 🔥 Logic: Filter by Month AND Search Keyword
+        const currentItems = expenses.filter(item => {
+            const matchMonth = item.date.startsWith(monthVal);
+            const matchSearch = item.item.toLowerCase().includes(searchVal);
+            return matchMonth && matchSearch;
+        });
+        
         currentItems.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         let monthClaimed = 0;
@@ -337,10 +371,9 @@
             const div = document.createElement('div');
             div.className = `expense-card ${item.isClaimed ? 'claimed' : ''}`;
             
-            // Icon Logic
             let tags = '';
             if (item.photo) tags += `<span class="icon-tag has-receipt" onclick="viewPhoto(event, '${item.id}')">📎 Photo</span>`;
-            if (item.hasReceipt && !item.photo) tags += `<span class="icon-tag has-receipt">🧾 Rec</span>`; // Physical receipt marked but no photo
+            if (item.hasReceipt && !item.photo) tags += `<span class="icon-tag has-receipt">🧾 Rec</span>`;
             
             div.innerHTML = `
                 <div class="card-info" onclick="openModal(${item.id})">
@@ -361,14 +394,22 @@
             container.appendChild(div);
         });
 
-        // Global Stats
+        // Stats (Calculate based on all data, not just filtered search)
         const allPending = expenses.filter(e => !e.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
-        document.getElementById('claimed-amount').innerText = `$${monthClaimed.toLocaleString()}`;
+        // Recalculate claimed for the MONTH (ignoring search filter for dashboard stats)
+        const totalMonthClaimed = expenses.filter(item => item.date.startsWith(monthVal) && item.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+        document.getElementById('claimed-amount').innerText = `$${totalMonthClaimed.toLocaleString()}`;
         document.getElementById('pending-amount').innerText = `$${allPending.toLocaleString()}`;
-        document.getElementById('total-in-amount').innerText = `$${(totalSalary + monthClaimed).toLocaleString()}`;
+        document.getElementById('total-in-amount').innerText = `$${(totalSalary + totalMonthClaimed).toLocaleString()}`;
     }
 
-    // --- Save Logic (Update for Receipt Checkbox) ---
+    // --- Save Logic ---
+    // 🔥 Feature: Set Category
+    function setCategory(catName) {
+        document.getElementById('inp-item').value = catName;
+    }
+
     function saveItem() {
         const t = i18n[currentLang];
         const editId = document.getElementById('edit-id').value;
@@ -396,56 +437,29 @@
         saveExpenses();
     }
 
-    // --- Excel Export (XLSX - Beautiful & Functional) ---
     function exportXLSX() {
         const t = i18n[currentLang];
-        // 1. Prepare Data Array
-        const header = ["日期", "項目", "金額 ($)", "狀態", "收據?", "電子檔備註"];
+        const header = ["Date", "Item", "Amount", "Status", "Receipt?", "Photo Note"];
         const rows = [];
-        
-        // Use current month filter or all? Usually people export all for record, or filtered.
-        // Let's export current filtered view for flexibility.
         const monthVal = document.getElementById('month-picker').value;
         const exportItems = expenses.filter(item => item.date.startsWith(monthVal));
-        exportItems.sort((a, b) => new Date(a.date) - new Date(b.date)); // Oldest first for reports
+        exportItems.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         let total = 0;
         exportItems.forEach(e => {
-            rows.push([
-                e.date,
-                e.item,
-                parseFloat(e.amount),
-                e.isClaimed ? "已 Claim" : "Pending",
-                e.hasReceipt ? "有" : "無",
-                e.photo ? "有相片" : ""
-            ]);
+            rows.push([e.date, e.item, parseFloat(e.amount), e.isClaimed?"Claimed":"Pending", e.hasReceipt?"Yes":"No", e.photo?"Attached":""]);
             total += parseFloat(e.amount);
         });
+        rows.push(["", "", "", "", "", ""]);
+        rows.push(["Total", "", total, "", "", ""]);
 
-        // Add Summary Row
-        rows.push(["", "", "", "", "", ""]); // Spacer
-        rows.push(["總計 (Total)", "", total, "", "", ""]);
-
-        // 2. Create Sheet
         const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-
-        // 3. Simple Column Width Adjustments (Auto-width is hard in mini version, manual setting is safer)
-        ws['!cols'] = [
-            { wch: 12 }, // Date
-            { wch: 25 }, // Item
-            { wch: 10 }, // Amount
-            { wch: 10 }, // Status
-            { wch: 8 },  // Receipt
-            { wch: 10 }  // Note
-        ];
-
-        // 4. Workbook & Download
+        ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 10 }];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Claims_${monthVal}`);
         XLSX.writeFile(wb, `Claim_Report_${monthVal}.xlsx`);
     }
 
-    // --- Other Functions (Bulk, Salary, Photo, Backup) ---
     function executeBulkClaim() {
         const t = i18n[currentLang];
         let budget = parseFloat(document.getElementById('bulk-amount').value);
@@ -484,11 +498,11 @@
             const item = expenses.find(e => e.id === id);
             document.getElementById('modal-title').innerText = t.modal_edit_title; document.getElementById('edit-id').value = id; document.getElementById('inp-date').value = item.date; document.getElementById('inp-item').value = item.item; document.getElementById('inp-amount').value = item.amount; 
             document.getElementById('inp-claimed').checked = item.isClaimed;
-            document.getElementById('inp-has-receipt').checked = item.hasReceipt; // Load status
+            document.getElementById('inp-has-receipt').checked = item.hasReceipt;
             if(item.photo) { document.getElementById('preview-img').src = item.photo; document.getElementById('preview-img').style.display = 'block'; document.getElementById('photo-base64').value = item.photo; }
         } else {
             document.getElementById('modal-title').innerText = t.modal_add_title; document.getElementById('edit-id').value = ''; document.getElementById('inp-date').valueAsDate = new Date(); document.getElementById('inp-item').value = ''; document.getElementById('inp-amount').value = ''; document.getElementById('inp-claimed').checked = false;
-            document.getElementById('inp-has-receipt').checked = true; // Default true
+            document.getElementById('inp-has-receipt').checked = true;
         }
         document.getElementById('modal').style.display = 'flex';
     }
@@ -505,7 +519,6 @@
                     canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
                     const data = canvas.toDataURL('image/jpeg', 0.6);
                     document.getElementById('preview-img').src = data; document.getElementById('preview-img').style.display = 'block'; document.getElementById('photo-base64').value = data;
-                    // Auto check receipt if photo uploaded
                     document.getElementById('inp-has-receipt').checked = true;
                 }
             }
