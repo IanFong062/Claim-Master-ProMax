@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Claim Master v8.2</title>
+    <title>Claim Master v8.3</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -162,7 +162,7 @@
 </div>
 
 <div class="tool-row">
-    <button class="btn-tool" onclick="exportXLSX()">📤 Excel (XLSX)</button>
+    <button class="btn-tool" onclick="exportXLSX()">📤 Excel (Full)</button>
     <button class="btn-tool" onclick="backupData()">💾 Backup</button>
     <label class="btn-tool" style="cursor:pointer; display:block;">
         📥 Restore
@@ -218,7 +218,7 @@
         <div class="checkbox-group">
             <div class="checkbox-item">
                 <input type="checkbox" id="inp-has-receipt">
-                <label for="inp-has-receipt" data-i18n="lbl_has_receipt">🧾 有收據 (Receipt Exists)</label>
+                <label for="inp-has-receipt" data-i18n="lbl_has_receipt">🧾 有收據 (Rec. Exists)</label>
             </div>
             <div class="checkbox-item">
                 <input type="checkbox" id="inp-claimed">
@@ -403,7 +403,6 @@
         });
 
         const allPending = expenses.filter(e => !e.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
-        // Recalculate MONTHLY claimed for dashboard (ignoring search filter)
         const totalMonthClaimed = expenses.filter(item => item.date.startsWith(monthVal) && item.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
         document.getElementById('claimed-amount').innerText = `$${totalMonthClaimed.toLocaleString()}`;
@@ -440,29 +439,25 @@
         saveExpenses();
     }
 
-    // --- Excel Export (Fixed: Include All Pending Items) ---
+    // --- Excel Export (Updated Logic) ---
     function exportXLSX() {
         const t = i18n[currentLang];
         const header = ["Date", "Item", "Amount", "Status", "Receipt?", "Photo Note"];
         const rows = [];
         const monthVal = document.getElementById('month-picker').value;
 
-        // 🔥 重點修改：篩選邏輯
-        // 我們要匯出的項目包括：
-        // 1. 屬於該月份的項目 (無論 Claim 未)
-        // 2. 或是 任何月份但仍然是 "Pending" 的項目 (舊債)
+        // 🔥 篩選：當月 + 所有 Pending
         const exportItems = expenses.filter(item => {
             const isCurrentMonth = item.date.startsWith(monthVal);
-            const isStillPending = !item.isClaimed;
-            return isCurrentMonth || isStillPending;
+            const isPending = !item.isClaimed;
+            return isCurrentMonth || isPending;
         });
 
-        // 按日期排序 (舊的在前，方便追數)
+        // 排序：舊至新
         exportItems.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        let monthTotal = 0; // 只計算「本月」的開支 (方便對數)
-        let listTotal = 0;  // 計算這張 Excel 表單上的所有總和
-
+        let monthTotal = 0;
+        
         exportItems.forEach(e => {
             rows.push([
                 e.date, 
@@ -472,26 +467,22 @@
                 e.hasReceipt ? "Yes" : "No", 
                 e.photo ? "Attached" : ""
             ]);
-
-            // 計算統計
+            
+            // 統計本月
             if (e.date.startsWith(monthVal)) {
                 monthTotal += parseFloat(e.amount);
             }
-            listTotal += parseFloat(e.amount);
         });
 
-        // 計算 Global Pending (所有待收)
+        // 計算 Global Pending
         const globalPending = expenses.filter(e => !e.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
-        rows.push(["", "", "", "", "", ""]); // 空行
-        
-        // 顯示不同維度的總結
-        rows.push([t.lbl_excel_month_total || "Month Expenses", "", monthTotal, "(本月開支)", "", ""]);
+        rows.push(["", "", "", "", "", ""]);
+        rows.push([t.lbl_excel_month_total || "Month Total", "", monthTotal, "(本月開支)", "", ""]);
         rows.push([t.lbl_excel_global_pending || "Global Pending", "", globalPending, "(所有未收)", "", ""]);
 
         const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
         ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }];
-        
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Claims_Report`);
         XLSX.writeFile(wb, `Claim_Report_${monthVal}_Full.xlsx`);
@@ -539,7 +530,7 @@
             if(item.photo) { document.getElementById('preview-img').src = item.photo; document.getElementById('preview-img').style.display = 'block'; document.getElementById('photo-base64').value = item.photo; }
         } else {
             document.getElementById('modal-title').innerText = t.modal_add_title; document.getElementById('edit-id').value = ''; document.getElementById('inp-date').valueAsDate = new Date(); document.getElementById('inp-item').value = ''; document.getElementById('inp-amount').value = ''; document.getElementById('inp-claimed').checked = false;
-            document.getElementById('inp-has-receipt').checked = true; // Default true for new
+            document.getElementById('inp-has-receipt').checked = true;
         }
         document.getElementById('modal').style.display = 'flex';
     }
