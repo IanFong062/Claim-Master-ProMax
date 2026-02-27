@@ -1,5 +1,5 @@
 // 每次改完 index.html，記得一定要改呢個版本號！(例如 v1 -> v2 -> v3)
-const CACHE_NAME = 'claim-master-v8.1'; 
+const CACHE_NAME = 'claim-master-v8.2'; 
 
 const ASSETS = [
   './',
@@ -47,4 +47,5 @@ self.addEventListener('fetch', (e) => {
       return response || fetch(e.request);
     })
   );
+
 });
