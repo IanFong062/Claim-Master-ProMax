@@ -440,32 +440,61 @@
         saveExpenses();
     }
 
+    // --- Excel Export (Fixed: Include All Pending Items) ---
     function exportXLSX() {
         const t = i18n[currentLang];
         const header = ["Date", "Item", "Amount", "Status", "Receipt?", "Photo Note"];
         const rows = [];
         const monthVal = document.getElementById('month-picker').value;
-        const exportItems = expenses.filter(item => item.date.startsWith(monthVal));
-        exportItems.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        let monthTotal = 0;
-        exportItems.forEach(e => {
-            rows.push([e.date, e.item, parseFloat(e.amount), e.isClaimed?"Claimed":"Pending", e.hasReceipt?"Yes":"No", e.photo?"Attached":""]);
-            monthTotal += parseFloat(e.amount);
+        // 🔥 重點修改：篩選邏輯
+        // 我們要匯出的項目包括：
+        // 1. 屬於該月份的項目 (無論 Claim 未)
+        // 2. 或是 任何月份但仍然是 "Pending" 的項目 (舊債)
+        const exportItems = expenses.filter(item => {
+            const isCurrentMonth = item.date.startsWith(monthVal);
+            const isStillPending = !item.isClaimed;
+            return isCurrentMonth || isStillPending;
         });
 
-        // Global Pending Calculation
+        // 按日期排序 (舊的在前，方便追數)
+        exportItems.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let monthTotal = 0; // 只計算「本月」的開支 (方便對數)
+        let listTotal = 0;  // 計算這張 Excel 表單上的所有總和
+
+        exportItems.forEach(e => {
+            rows.push([
+                e.date, 
+                e.item, 
+                parseFloat(e.amount), 
+                e.isClaimed ? "Claimed" : "Pending", 
+                e.hasReceipt ? "Yes" : "No", 
+                e.photo ? "Attached" : ""
+            ]);
+
+            // 計算統計
+            if (e.date.startsWith(monthVal)) {
+                monthTotal += parseFloat(e.amount);
+            }
+            listTotal += parseFloat(e.amount);
+        });
+
+        // 計算 Global Pending (所有待收)
         const globalPending = expenses.filter(e => !e.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
-        rows.push(["", "", "", "", "", ""]);
-        rows.push([t.lbl_excel_month_total || "Month Total", "", monthTotal, "", "", ""]);
-        rows.push([t.lbl_excel_global_pending || "Global Pending", "", globalPending, "", "", ""]);
+        rows.push(["", "", "", "", "", ""]); // 空行
+        
+        // 顯示不同維度的總結
+        rows.push([t.lbl_excel_month_total || "Month Expenses", "", monthTotal, "(本月開支)", "", ""]);
+        rows.push([t.lbl_excel_global_pending || "Global Pending", "", globalPending, "(所有未收)", "", ""]);
 
         const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-        ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 10 }];
+        ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }];
+        
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, `Claims_${monthVal}`);
-        XLSX.writeFile(wb, `Claim_Report_${monthVal}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, `Claims_Report`);
+        XLSX.writeFile(wb, `Claim_Report_${monthVal}_Full.xlsx`);
     }
 
     function executeBulkClaim() {
